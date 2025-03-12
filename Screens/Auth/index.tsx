@@ -1,104 +1,197 @@
-// import React from 'react';
-// import { View, Text, Button, StyleSheet } from 'react-native';
+
+// import React, { useState } from 'react';
+// import { View, StyleSheet, TouchableOpacity, Text, Alert } from 'react-native';
+// import { TextInput, Button } from 'react-native-paper';
 // import { StackNavigationProp } from '@react-navigation/stack';
 // import { RootStackParamList } from '../../App';
+// import { loginUser } from '../../api/api';
 
-// type Props = {
+// type LoginScreenProps = {
 //   navigation: StackNavigationProp<RootStackParamList, 'Login'>;
 // };
 
-// const LoginScreen: React.FC<Props> = ({ navigation }) => {
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.text}>🔐 Login Screen</Text>
-//       <Button title="Go to Home" onPress={() => navigation.replace('MainApp')} />
-//       <Button title="Sign Up" onPress={() => navigation.navigate('Signup')} />
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   text: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//   },
-// });
-
-// export default LoginScreen;
-
-// import React, { useState } from 'react';
-// import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-// import { useNavigation } from '@react-navigation/native';
-
-// const LoginScreen = () => {
+// const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 //   const [email, setEmail] = useState('');
 //   const [password, setPassword] = useState('');
-//   const navigation = useNavigation();
+//   const [passwordVisible, setPasswordVisible] = useState(false);
+//   const [error, setError] = useState('');
 
-//   const handleLogin = () => {
-//     // Dummy login validation
-//     if (email && password) {
-//       navigation.replace('HomeScreen');
-//     } else {
-//       alert('Please enter valid credentials.');
+//   const handleLogin = async () => {
+//     if (!email || !password) {
+//       setError('Email and password are required');
+//       Alert.alert('Error', 'Email and password are required');
+//       return;
+//     }
+
+//     setError('');
+    
+//     try {
+//       await loginUser(email, password);
+//       Alert.alert('Success', 'Login successful!', [{ text: 'OK', onPress: () => navigation.replace('MainApp') }]);
+//     } catch (error) {
+//       setError('Failed to login. Try again.');
+//       Alert.alert('Error', 'Failed to login. Try again.');
 //     }
 //   };
 
 //   return (
 //     <View style={styles.container}>
 //       <Text style={styles.title}>Login</Text>
-//       <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-//       <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-//       <TouchableOpacity style={styles.button} onPress={handleLogin}>
-//         <Text style={styles.buttonText}>Login</Text>
+
+//       <TextInput
+//         label="Email"
+//         value={email}
+//         onChangeText={setEmail}
+//         mode="outlined"
+//         keyboardType="email-address"
+//         autoCapitalize="none"
+//         style={styles.input}
+//       />
+
+//       <TextInput
+//         label="Password"
+//         value={password}
+//         onChangeText={setPassword}
+//         mode="outlined"
+//         secureTextEntry={!passwordVisible}
+//         right={<TextInput.Icon icon={passwordVisible ? "eye-off" : "eye"} onPress={() => setPasswordVisible(!passwordVisible)} />}
+//         style={styles.input}
+//       />
+
+//       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+//       <Button mode="contained" onPress={handleLogin} style={styles.button}>
+//         Login
+//       </Button>
+
+//       <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+//         <Text style={styles.link}>Don't have an account? Sign Up</Text>
 //       </TouchableOpacity>
 //     </View>
 //   );
 // };
 
 // const styles = StyleSheet.create({
-//   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-//   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-//   input: { width: '80%', padding: 15, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', marginBottom: 10 },
-//   button: { width: '80%', padding: 15, borderRadius: 8, alignItems: 'center', backgroundColor: '#3498db' },
-//   buttonText: { color: '#fff', fontSize: 18 }
+//   container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
+//   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+//   input: { marginBottom: 12 },
+//   button: { marginTop: 10, backgroundColor: '#3498db' },
+//   error: { color: 'red', textAlign: 'center', marginBottom: 10 },
+//   link: { textAlign: 'center', marginTop: 15, color: '#3498db' },
 // });
 
 // export default LoginScreen;
 
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Alert } from 'react-native';
+import { TextInput, Button } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { loginUser } from '../../api/api';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 type LoginScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Login'>;
 };
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [error, setError] = useState('');
+
+  // const handleLogin = async () => {
+  //   if (!email || !password) {
+  //     setError('Email and password are required');
+  //     Alert.alert('Error', 'Email and password are required');
+  //     return;
+  //   }
+
+  //   setError('');
+
+  //   try {
+  //     const response = await loginUser(email, password);
+  //     if (response?.access_token) {
+  //       Alert.alert('Success', 'Login successful!', [
+  //         { text: 'OK', onPress: () => navigation.replace('MainApp') }
+  //       ]);
+  //     }
+  //   } catch (error: any) {
+  //     setError(error.message || 'Failed to login. Try again.');
+  //     Alert.alert('Error', error.message || 'Failed to login. Try again.');
+  //   }
+  // };
+
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Email and password are required');
+      Alert.alert('Error', 'Email and password are required');
+      return;
+    }
+  
+    setError('');
+  
+    try {
+      const response = await loginUser(email, password);
+      if (response?.access_token) {
+        await EncryptedStorage.setItem('access_token', response.access_token);
+        await EncryptedStorage.setItem('refresh_token', response.refresh_token);
+        
+        Alert.alert('Success', 'Login successful!', [
+          { text: 'OK', onPress: () => navigation.replace('MainApp') }
+        ]);
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to login. Try again.');
+      Alert.alert('Error', error.message || 'Failed to login. Try again.');
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Login</Text>
-      <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry />
-      <TouchableOpacity style={styles.button} onPress={() => navigation.replace('MainApp')}>
-        <Text style={styles.buttonText}>Login</Text>
+      <Text style={styles.title}>Login</Text>
+
+      <TextInput
+        label="Email"
+        value={email}
+        onChangeText={setEmail}
+        mode="outlined"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        style={styles.input}
+      />
+
+      <TextInput
+        label="Password"
+        value={password}
+        onChangeText={setPassword}
+        mode="outlined"
+        secureTextEntry={!passwordVisible}
+        right={<TextInput.Icon icon={passwordVisible ? "eye-off" : "eye"} onPress={() => setPasswordVisible(!passwordVisible)} />}
+        style={styles.input}
+      />
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <Button mode="contained" onPress={handleLogin} style={styles.button}>
+      Login
+      </Button>
+
+      <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+        <Text style={styles.link}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  text: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  input: { width: '100%', padding: 12, borderWidth: 1, borderRadius: 8, marginBottom: 10 },
-  button: { backgroundColor: '#1D2231', padding: 12, borderRadius: 8 },
-  buttonText: { color: 'white', fontSize: 16 },
+  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  input: { marginBottom: 12 },
+  button: { marginTop: 10, backgroundColor: '#3498db' },
+  error: { color: 'red', textAlign: 'center', marginBottom: 10 },
+  link: { textAlign: 'center', marginTop: 15, color: '#3498db' },
 });
 
 export default LoginScreen;
